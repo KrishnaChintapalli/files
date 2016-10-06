@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop.xsd
+    http://www.springframework.org/schema/util 
+    http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+		<property name="driverClassName">
+			<value>${jdbc_driverClassName}</value>
+		</property>
+		<property name="url">
+			<value>${jdbc_url}</value>
+		</property>
+		<property name="username">
+			<value>${jdbc_username}</value>
+		</property>
+		<property name="password">
+			<value>${jdbc_password}</value>
+		</property>
+		<!-- 连接池最大使用连接数 -->
+		<property name="maxActive">
+			<value>20</value>
+		</property>
+		<!-- 初始化连接大小 -->
+		<property name="initialSize">
+			<value>1</value>
+		</property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait">
+			<value>60000</value>
+		</property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle">
+			<value>3</value>
+		</property>
+		<!-- 自动清除无用连接 -->
+		<property name="removeAbandoned">
+			<value>true</value>
+		</property>
+		<!-- 清除无用连接的等待时间 -->
+		<property name="removeAbandonedTimeout">
+			<value>180</value>
+		</property>
+		<!-- 连接属性 -->
+		<property name="connectionProperties">
+			<value>clientEncoding=UTF-8</value>
+		</property>
+	</bean>
+
+	<!-- mybatis文件配置，扫描所有mapper文件 p:configLocation="classpath:conf/mybatis-config.xml" -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean"
+		p:dataSource-ref="dataSource" p:mapperLocations="classpath*:com/appc/**/ibatis/*.xml" /><!-- 
+		configLocation为mybatis属性 mapperLocations为所有mapper -->
+
+	<!-- spring与mybatis整合配置，扫描所有dao -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"
+		p:basePackage="com.appc.file.dao" p:sqlSessionFactoryBeanName="sqlSessionFactory" />
+
+	<!-- 对数据源进行事务管理 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+		p:dataSource-ref="dataSource" />
+
+	<!-- 配置那些类的方法进行事务管理 -->
+	<aop:config proxy-target-class="true">
+		<aop:pointcut id="executeService" expression="execution(* com.appc.*.service..*(..))" />
+		<aop:advisor pointcut-ref="executeService" advice-ref="txAdvice" />
+	</aop:config>
+
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="do*" propagation="REQUIRED" />
+			<tx:method name="create*" propagation="REQUIRED" />
+			<tx:method name="insert*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="merge*" propagation="REQUIRED" />
+			<tx:method name="del*" propagation="REQUIRED" />
+			<tx:method name="remove*" propagation="REQUIRED" />
+			<tx:method name="put*" propagation="REQUIRED" />
+			<tx:method name="show*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="get*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="count*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="valid*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="list*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="batchSaveOrUpdate" propagation="REQUIRES_NEW" />
+			<!-- <tx:method name="*" propagation="REQUIRED" rollback-for="java.lang.Exception"/> -->
+		</tx:attributes>
+	</tx:advice>
+</beans>
